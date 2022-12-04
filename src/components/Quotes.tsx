@@ -12,7 +12,16 @@ import { useNavigate } from "react-router-dom";
 export interface QuoteDataProps {
   author: string;
   quote: string;
+  gender: string;
 }
+
+const Getgender = (name: string): Promise<any> => {
+  return new Promise((resolve) => {
+    fetch(`https://api.genderize.io/?name=${name}`)
+      .then((res) => res.json())
+      .then((data) => resolve(data));
+  });
+};
 
 const Quotes = () => {
   const [rows, setRows] = useState<QuoteDataProps[] | []>([]);
@@ -24,9 +33,20 @@ const Quotes = () => {
       "https://gist.githubusercontent.com/camperbot/5a022b72e96c4c9585c32bf6a75f62d9/raw/e3c6895ce42069f0ee7e991229064f167fe8ccdc/quotes.json"
     )
       .then((res) => res.json())
-      .then((data) => {
+      .then(async (data) => {
         console.log(data);
-        setRows(data.quotes);
+        const quotes = [];
+        for (let index = 0; index < data.quotes.length; index++) {
+          const element = data.quotes[index];
+          const genderResponse = await Getgender(element.author);
+          //console.log("gender", genderResponse);
+
+          element.gender = genderResponse.gender || "male";
+          quotes.push(element);
+        }
+        console.log("v2", quotes);
+
+        setRows(quotes);
       });
   }, []);
 
@@ -39,6 +59,7 @@ const Quotes = () => {
               <TableRow>
                 <TableCell>Author</TableCell>
                 <TableCell align="right">Quote</TableCell>
+                <TableCell>Gender</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -48,6 +69,9 @@ const Quotes = () => {
                 >
                   <TableCell align="right">{row?.author}</TableCell>
                   <TableCell align="right">{row?.quote}</TableCell>
+                  <TableCell align="right">
+                    {row.gender === "male" ? "👨" : "👩"}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
